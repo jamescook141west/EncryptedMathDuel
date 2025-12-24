@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Encrypted Math Duel — Zama FHEVM</title>
+  <style>
+  
+  :root {
+    --bg-body: #fdfdfd;
+    --bg-card: #ffffff;
+    --border-card: #e5e7eb;
+    --accent: #ec4899;
+    --accent-alt: #8b5cf6;
+    --accent-soft: rgba(236, 72, 153, 0.12);
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --radius-xl: 20px;
+    --radius-lg: 12px;
+    --shadow-card: 0 18px 45px rgba(148, 163, 184, 0.35);
+    --input-border: #d1d5db;
+    --input-bg: #f9fafb;
+    --status-muted: #4b5563;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background:
+      linear-gradient(135deg, #fdf2ff 0, #eff6ff 40%, #f9fafb 100%);
+    color: var(--text-main);
+    padding: 32px 20px;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 16px 18px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(209, 213, 219, 0.8);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  h1::after {
+    content: "Live Session";
+    font-size: 0.78rem;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  h2 {
+    margin: 0 0 4px 0;
+    font-size: 1.02rem;
+  }
+
+  .card {
+    border-radius: var(--radius-xl);
+    padding: 18px 20px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top right, rgba(236, 72, 153, 0.1), transparent 55%),
+      radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.12), transparent 55%);
+    opacity: 0.9;
+    pointer-events: none;
+  }
+
+  .card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .col {
+    flex: 1;
+    min-width: 190px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    margin-top: 8px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+  }
+
+  input {
+    width: 100%;
+    margin-top: 4px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, transform 0.05s ease;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+    background: #ffffff;
+    box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.22);
+    transform: translateY(-0.5px);
+  }
+
+  button {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+    color: #f9fafb;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 14px 28px rgba(129, 140, 248, 0.35);
+    transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    white-space: nowrap;
+  }
+
+  button::before {
+    content: "●";
+    font-size: 0.7rem;
+    color: rgba(248, 250, 252, 0.8);
+  }
+
+  button.secondary {
+    background: #f3f4f6;
+    color: #111827;
+    box-shadow: 0 8px 18px rgba(148, 163, 184, 0.4);
+  }
+
+  button.secondary::before {
+    content: "◎";
+  }
+
+  button.success {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    box-shadow: 0 14px 28px rgba(34, 197, 94, 0.35);
+  }
+
+  button.success::before {
+    content: "★";
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  button:not(:disabled):hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+  }
+
+  .status {
+    margin-top: 10px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+  }
+
+  .status.pending {
+    display: inline-flex;
+    background: rgba(251, 191, 36, 0.12);
+    color: #92400e;
+  }
+
+  .status.pending::before {
+    background: #f59e0b;
+  }
+
+  .status.success {
+    display: inline-flex;
+    background: rgba(22, 163, 74, 0.08);
+    color: #15803d;
+  }
+
+  .status.success::before {
+    background: #22c55e;
+  }
+
+  .status.error {
+    display: inline-flex;
+    background: rgba(239, 68, 68, 0.06);
+    color: #b91c1c;
+  }
+
+  .status.error::before {
+    background: #ef4444;
+  }
+
+  pre {
+    background: #020617;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(15, 23, 42, 0.7);
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    overflow: auto;
+    max-height: 220px;
+    white-space: pre-wrap;
+    color: #e5e7eb;
+    margin-top: 8px;
+  }
+
+  .result-box {
+    margin-top: 10px;
+    padding: 11px 13px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    display: none;
+    border: 1px solid transparent;
+  }
+
+  .result-box.none {
+    background: #f3f4f6;
+    color: var(--status-muted);
+    border-color: #e5e7eb;
+  }
+
+  .result-box.bronze {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fbbf24;
+  }
+
+  .result-box.silver {
+    background: #e5e7eb;
+    color: #111827;
+    border-color: #9ca3af;
+  }
+
+  .result-box.gold {
+    background: #fef9c3;
+    color: #92400e;
+    border-color: #facc15;
+  }
+
+  p[style] {
+    color: var(--text-muted) !important;
+    font-size: 0.83rem !important;
+  }
+
+  footer {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  #btnConnect {
+    background: #111827;
+    color: #f9fafb;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.45);
+  }
+
+  #btnConnect::before {
+    content: "⦿";
+  }
+
+  @media (max-width: 640px) {
+    body {
+      padding: 20px 14px;
+    }
+
+    header {
+      border-radius: 16px;
+    }
+
+    .card {
+      padding: 16px 14px 14px;
+    }
+
+    h1 {
+      font-size: 1.26rem;
+    }
+  }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧮 Encrypted Math Duel</h1>
+      <button id="btnConnect">Connect Wallet</button>
+    </header>
+
+    <!-- 1. CREATE DUEL (CORRECT ANSWER) -->
+    <section class="card">
+      <h2>1. Create Duel (Correct Answer)</h2>
+      <p style="font-size:0.85rem;color:#9ca3af;">
+        Encrypt the correct answer to a math puzzle and create a duel by its duelId (bytes32).
+      </p>
+
+      <div class="row">
+        <div class="col">
+          <label>Duel Key (any string, e.g. "duel-1")</label>
+          <input id="duelKey" type="text" placeholder="duel-1" value="duel-1" />
+        </div>
+        <div class="col">
+          <label>Correct Answer (0–65535)</label>
+          <input id="correctAnswer" type="number" min="0" max="65535" value="42" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="btnCreateDuel" class="success">Create Duel (Encrypt Correct)</button>
+      </div>
+      <div id="createStatus" class="status"></div>
+      <pre id="createLog" style="display:none;"></pre>
+    </section>
+
+    <!-- 2. PLAYER GUESSES -->
+    <section class="card">
+      <h2>2. Submit Player Guesses</h2>
+      <p style="font-size:0.85rem;color:#9ca3af;">
+        Each player encrypts a guess and submits it to the same duel.
+      </p>
+
+      <div class="row">
+        <div class="col">
+          <label>Duel Key (must match created duel)</label>
+          <input id="guessDuelKey" type="text" placeholder="duel-1" value="duel-1" />
+        </div>
+        <div class="col">
+          <label>Player 1 Guess (0–65535)</label>
+          <input id="guess1" type="number" min="0" max="65535" value="40" />
+        </div>
+        <div class="col">
+          <label>Player 2 Guess (0–65535)</label>
+          <input id="guess2" type="number" min="0" max="65535" value="55" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="btnSubmitGuess1">Submit Guess for Player 1</button>
+        <button id="btnSubmitGuess2" class="secondary">Submit Guess for Player 2</button>
+      </div>
+      <div id="guessStatus" class="status"></div>
+      <pre id="guessLog" style="display:none;"></pre>
+    </section>
+
+    <!-- 3. COMPUTE WINNER -->
+    <section class="card">
+      <h2>3. Compute Winner (Homomorphic)</h2>
+      <p style="font-size:0.85rem;color:#9ca3af;">
+        Encrypt zero once, compute the winner homomorphically, and store the encrypted winner code.
+      </p>
+
+      <div class="row">
+        <div class="col">
+          <label>Duel Key</label>
+          <input id="winnerDuelKey" type="text" placeholder="duel-1" value="duel-1" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="btnComputeWinner" class="success">Compute Winner</button>
+      </div>
+      <div id="winnerStatus" class="status"></div>
+      <pre id="winnerHandleOutput" style="display:none;"></pre>
+    </section>
+
+    <!-- 4. MAKE PUBLIC & DECRYPT -->
+    <section class="card">
+      <h2>4. Make Public & Decrypt Winner</h2>
+      <p style="font-size:0.85rem;color:#9ca3af;">
+        Make the winner code publicly decryptable and decrypt it via Zama Relayer.
+      </p>
+
+      <div class="row">
+        <div class="col">
+          <label>Duel Key</label>
+          <input id="decryptDuelKey" type="text" placeholder="duel-1" value="duel-1" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="btnGetHandle" class="secondary">Get Winner Handle</button>
+        <button id="btnMakePublic">Make Winner Public</button>
+        <button id="btnDecryptWinner" class="success">Decrypt Winner</button>
+      </div>
+
+      <div id="decryptStatus" class="status"></div>
+      <pre id="handleOutput" style="display:none;"></pre>
+      <div id="winnerResult" class="result-box"></div>
+    </section>
+
+    <footer>
+      Zama FHEVM · Encrypted Math Duel · Relayer SDK 0.3.0 · Ethers v6
+    </footer>
+  </div>
+
+  <!-- СЮДИ ВСТАВЛЯЄШ СКРИПТ -->
+  <!-- ПІДСТАВ СВОЮ АДРЕСУ КОНТРАКТУ В CONFIG.CONTRACT_ADDRESS -->
+  <script type="module">
+    import { initSDK, createInstance, SepoliaConfig } from "https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js";
+    import { BrowserProvider, Contract, getAddress, keccak256, toUtf8Bytes } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
+
+    const CONFIG = {
+      RELAYER_URL: "https://relayer.testnet.zama.org",
+      GATEWAY_URL: "https://gateway.testnet.zama.org",
+      CONTRACT_ADDRESS: "0xc0e38DD2fa617b8E189EB88BD80ACebE0588143C"
+    };
+
+   const ABI = [
+  "function submitCorrect(bytes32 duelId, bytes32 encCorrect, bytes attestation) external",
+  "function submitGuess1(bytes32 duelId, bytes32 encGuess, bytes attestation) external",
+  "function submitGuess2(bytes32 duelId, bytes32 encGuess, bytes attestation) external",
+  "function computeWinner(bytes32 duelId, bytes32 encZero, bytes attestation) external returns (bytes32)",
+  "function makeWinnerPublic(bytes32 duelId) external",
+  "function winnerHandle(bytes32 duelId) external view returns (bytes32)",
+  "function duelExists(bytes32 duelId) external view returns (bool)",
+  "function winnerExists(bytes32 duelId) external view returns (bool)",
+  "function duelOwner(bytes32 duelId) external view returns (address)"
+];
+
+
+    let provider, signer, address, contract, relayer;
+    const $ = s => document.querySelector(s);
+
+    const log = (title, data) => console.log(`%c[${title}]`, "color:#38bdf8;font-weight:bold;", data);
+    const logError = (title, err) => console.error(`%c[ERROR:${title}]`, "color:#ef4444;font-weight:bold;", err);
+
+    const toHex = u8 => "0x" + Array.from(u8, b => b.toString(16).padStart(2,"0")).join("");
+
+    const setStatus = (id, msg, type="pending") => {
+      const el = $(id);
+      if (!el) return;
+      el.textContent = msg;
+      el.className = `status ${type}`;
+      el.style.display = "block";
+      log(`STATUS ${id}`, msg);
+    };
+    const clearStatus = id => {
+      const el = $(id);
+      if (el) el.style.display = "none";
+    };
+
+    const toDuelId = (text) => {
+      const t = (text || "").trim();
+      const h = keccak256(toUtf8Bytes(t));
+      log("DuelId derived", { key: t, duelId: h });
+      return h;
+    };
+
+    async function connect() {
+      try {
+        log("Connect", "start");
+        if (!window.ethereum) throw new Error("MetaMask not installed");
+
+        provider = provider || new BrowserProvider(window.ethereum);
+        const accounts = await provider.send("eth_requestAccounts", []);
+        log("Accounts", accounts);
+
+        signer = signer || await provider.getSigner();
+        address = address || await signer.getAddress();
+        log("Address", address);
+
+        contract = contract || new Contract(getAddress(CONFIG.CONTRACT_ADDRESS), ABI, signer);
+        log("Contract", CONFIG.CONTRACT_ADDRESS);
+
+        $("#btnConnect").textContent = address.slice(0, 6) + "…" + address.slice(-4);
+
+        if (!relayer) {
+          await initSDK();
+          relayer = await createInstance({
+            ...SepoliaConfig,
+            relayerUrl: CONFIG.RELAYER_URL,
+            gatewayUrl: CONFIG.GATEWAY_URL,
+            network: window.ethereum,
+            debug: true
+          });
+          log("Relayer", "instance created");
+        }
+
+        log("Connect", "done");
+        return true;
+      } catch (e) {
+        logError("Connect", e);
+        setStatus("#createStatus", "Wallet/relayer connection failed", "error");
+        return false;
+      }
+    }
+
+    $("#btnConnect").onclick = connect;
+
+    async function encryptEuint16(value) {
+      if (!relayer) throw new Error("Relayer not initialized");
+      if (!address) throw new Error("No wallet address");
+
+      log("EncryptEuint16", { value });
+
+      const enc = relayer.createEncryptedInput(
+        getAddress(CONFIG.CONTRACT_ADDRESS),
+        getAddress(address)
+      );
+
+      enc.add16(BigInt(value));
+
+      const { handles, inputProof } = await enc.encrypt();
+      log("Encrypt result", { handleCount: handles.length, type0: typeof handles[0] });
+
+      const hRaw = handles[0]?.handle || handles[0]?.ciphertext || handles[0];
+      const handle = typeof hRaw === "string" ? hRaw : toHex(hRaw);
+
+      const att = typeof inputProof === "string"
+        ? (inputProof.startsWith("0x") ? inputProof : "0x" + inputProof)
+        : toHex(inputProof);
+
+      log("EncryptEuint16 final", { handle, attLen: att.length });
+      return { handle, attestation: att };
+    }
+
+    // 1) submitCorrect
+    $("#btnCreateDuel").onclick = async () => {
+      try {
+        log("CreateDuel", "click");
+        if (!(await connect())) return;
+
+        clearStatus("#createStatus");
+        $("#createLog").style.display = "none";
+
+        const duelKey = $("#duelKey").value;
+        const correct = parseInt($("#correctAnswer").value, 10) || 0;
+        const duelId = toDuelId(duelKey);
+
+        setStatus("#createStatus", "Encrypting correct answer…", "pending");
+        const { handle, attestation } = await encryptEuint16(correct);
+
+        log("submitCorrect args", { duelId, handle, attLen: attestation.length });
+
+        setStatus("#createStatus", "Submitting submitCorrect tx…", "pending");
+        const tx = await contract.submitCorrect(duelId, handle, attestation);
+        log("Tx submitCorrect sent", tx.hash);
+        const receipt = await tx.wait();
+        log("Tx submitCorrect receipt", { blockNumber: receipt.blockNumber, status: receipt.status });
+
+        $("#createLog").textContent =
+          `Duel created
+duelKey: ${duelKey}
+duelId: ${duelId}
+correctAnswer: ${correct}
+encHandle: ${handle}`;
+        $("#createLog").style.display = "block";
+
+        setStatus("#createStatus", "Duel created successfully", "success");
+      } catch (e) {
+        logError("CreateDuel", e);
+        setStatus("#createStatus", "Error: " + (e.message || String(e)), "error");
+      }
+    };
+
+    // 2) guesses
+    async function submitGuess(playerIndex) {
+      const statusId = "#guessStatus";
+      try {
+        log(`SubmitGuess${playerIndex}`, "start");
+        if (!(await connect())) return;
+
+        clearStatus(statusId);
+        $("#guessLog").style.display = "none";
+
+        const duelKey = $("#guessDuelKey").value;
+        const duelId = toDuelId(duelKey);
+        const guessVal =
+          playerIndex === 1
+            ? parseInt($("#guess1").value, 10) || 0
+            : parseInt($("#guess2").value, 10) || 0;
+
+        setStatus(statusId, `Encrypting guess for player ${playerIndex}…`, "pending");
+        const { handle, attestation } = await encryptEuint16(guessVal);
+
+        const fn = playerIndex === 1 ? contract.submitGuess1 : contract.submitGuess2;
+
+        log("SubmitGuess args", { duelId, playerIndex, guessVal, handle, attLen: attestation.length });
+
+        setStatus(statusId, `Submitting submitGuess${playerIndex} tx…`, "pending");
+        const tx = await fn(duelId, handle, attestation);
+        log(`Tx submitGuess${playerIndex} sent`, tx.hash);
+        const receipt = await tx.wait();
+        log(`Tx submitGuess${playerIndex} receipt`, { blockNumber: receipt.blockNumber, status: receipt.status });
+
+        $("#guessLog").textContent =
+          `Guess submitted for player ${playerIndex}
+duelKey: ${duelKey}
+duelId: ${duelId}
+guess: ${guessVal}
+encHandle: ${handle}`;
+        $("#guessLog").style.display = "block";
+
+        setStatus(statusId, `Guess submitted for player ${playerIndex}`, "success");
+      } catch (e) {
+        logError(`SubmitGuess${playerIndex}`, e);
+        setStatus(statusId, "Error: " + (e.message || String(e)), "error");
+      }
+    }
+
+    $("#btnSubmitGuess1").onclick = () => submitGuess(1);
+    $("#btnSubmitGuess2").onclick = () => submitGuess(2);
+
+    // 3) computeWinner
+    $("#btnComputeWinner").onclick = async () => {
+      try {
+        log("ComputeWinner", "click");
+        if (!(await connect())) return;
+
+        clearStatus("#winnerStatus");
+        $("#winnerHandleOutput").style.display = "none";
+
+        const duelKey = $("#winnerDuelKey").value;
+        const duelId = toDuelId(duelKey);
+        const zeroVal = 0;
+
+        setStatus("#winnerStatus", "Encrypting zero value…", "pending");
+        const { handle: encZero, attestation } = await encryptEuint16(zeroVal);
+
+        log("ComputeWinner args", { duelId, encZero, attLen: attestation.length });
+
+        setStatus("#winnerStatus", "Submitting computeWinner tx…", "pending");
+        const tx = await contract.computeWinner(duelId, encZero, attestation);
+        log("Tx computeWinner sent", tx.hash);
+        const receipt = await tx.wait();
+        log("Tx computeWinner receipt", { blockNumber: receipt.blockNumber, status: receipt.status });
+
+        setStatus("#winnerStatus", "Winner computed, fetching handle…", "pending");
+        const handle = await contract.winnerHandle(duelId);
+        log("winnerHandle()", handle);
+
+        $("#winnerHandleOutput").textContent = "Winner Handle:\n" + handle;
+        $("#winnerHandleOutput").style.display = "block";
+
+        $("#decryptDuelKey").value = duelKey;
+        $("#handleOutput").textContent = "Winner Handle:\n" + handle;
+        $("#handleOutput").style.display = "block";
+
+        setStatus("#winnerStatus", "Winner handle stored", "success");
+      } catch (e) {
+        logError("ComputeWinner", e);
+        setStatus("#winnerStatus", "Error: " + (e.message || String(e)), "error");
+      }
+    };
+
+    // 4) make public + get handle
+    $("#btnMakePublic").onclick = async () => {
+      try {
+        log("MakePublic", "click");
+        if (!(await connect())) return;
+
+        clearStatus("#decryptStatus");
+
+        const duelKey = $("#decryptDuelKey").value;
+        const duelId = toDuelId(duelKey);
+
+        setStatus("#decryptStatus", "Submitting makeWinnerPublic tx…", "pending");
+        const tx = await contract.makeWinnerPublic(duelId);
+        log("Tx makeWinnerPublic sent", tx.hash);
+        const receipt = await tx.wait();
+        log("Tx makeWinnerPublic receipt", { blockNumber: receipt.blockNumber, status: receipt.status });
+
+        setStatus("#decryptStatus", "Winner is now public", "success");
+      } catch (e) {
+        logError("MakePublic", e);
+        setStatus("#decryptStatus", "Error: " + (e.message || String(e)), "error");
+      }
+    };
+
+    $("#btnGetHandle").onclick = async () => {
+      try {
+        log("GetHandle", "click");
+        if (!(await connect())) return;
+
+        clearStatus("#decryptStatus");
+        $("#handleOutput").style.display = "none";
+
+        const duelKey = $("#decryptDuelKey").value;
+        const duelId = toDuelId(duelKey);
+
+        setStatus("#decryptStatus", "Fetching winner handle…", "pending");
+        const handle = await contract.winnerHandle(duelId);
+        log("winnerHandle()", handle);
+
+        $("#handleOutput").textContent = "Winner Handle:\n" + handle;
+        $("#handleOutput").style.display = "block";
+
+        setStatus("#decryptStatus", "Handle retrieved", "success");
+      } catch (e) {
+        logError("GetHandle", e);
+        setStatus("#decryptStatus", "Error: " + (e.message || String(e)), "error");
+      }
+    };
+
+    // decrypt
+    function cleanHandle(raw) {
+      return String(raw).trim().split("\n").pop().trim();
+    }
+
+    async function decryptWinner(handleHex) {
+      if (!relayer) throw new Error("Relayer not initialized");
+
+      const handle = String(handleHex).trim();
+      if (!handle.startsWith("0x") || handle.length !== 66)
+        throw new Error("Invalid ciphertext handle");
+
+      const request = [handle];
+      const out = await relayer.publicDecrypt(request);
+
+      if (!out || typeof out !== "object" || !out.clearValues)
+        throw new Error("Invalid decrypt response");
+
+      const lower = handle.toLowerCase();
+      const result = out.clearValues[handle] ?? out.clearValues[lower];
+
+      if (result === undefined || result === null)
+        throw new Error("Decrypt produced no value");
+
+      return Number(result); // 0/1/2
+    }
+
+    $("#btnDecryptWinner").onclick = async () => {
+      try {
+        await connect();
+        clearStatus("#decryptStatus");
+
+        const raw = $("#handleOutput").textContent || $("#winnerHandleOutput").textContent;
+        const handle = cleanHandle(raw);
+
+        const code = await decryptWinner(handle);
+
+        const resultDiv = $("#winnerResult");
+        resultDiv.style.display = "block";
+
+        if (code === 0) {
+          resultDiv.className = "result-box tie";
+          resultDiv.textContent = "Result: Tie (0). Both players are equally close.";
+        } else if (code === 1) {
+          resultDiv.className = "result-box p1";
+          resultDiv.textContent = "Result: Player 1 wins (1). Player 1 is closer to the correct answer.";
+        } else if (code === 2) {
+          resultDiv.className = "result-box p2";
+          resultDiv.textContent = "Result: Player 2 wins (2). Player 2 is closer to the correct answer.";
+        } else {
+          resultDiv.className = "result-box";
+          resultDiv.textContent = "Unexpected winner code: " + code;
+        }
+
+        setStatus("#decryptStatus", "✅ Winner decrypted", "success");
+      } catch (e) {
+        logError("DecryptWinner", e);
+        setStatus("#decryptStatus", "Error: " + (e.message || String(e)), "error");
+      }
+    };
+
+    log("Script", "✅ All handlers attached and ready");
+  </script>
+</body>
+</html>
